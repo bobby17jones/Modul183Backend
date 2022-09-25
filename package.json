@@ -20,7 +20,9 @@
     "mysql2": "^2.3.3",
     "nodemailer": "^6.7.8",
     "nodemon": "^2.0.19",
+    "qrcode": "^1.5.1",
     "reflect-metadata": "^0.1.13",
+    "speakeasy": "^2.0.0",
     "typeorm": "^0.3.9"
   },
   "devDependencies": {

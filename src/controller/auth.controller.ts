@@ -6,6 +6,9 @@ import { sign, verify } from "jsonwebtoken";
 import { Token } from "../entity/token.entity";
 import { MoreThanOrEqual } from "typeorm";
 
+const speakeasy = require("speakeasy");
+const qrcode = require("qrcode");
+
 export const Register = async (req: Request, res: Response) => {
     const body = req.body;
 
@@ -15,14 +18,14 @@ export const Register = async (req: Request, res: Response) => {
         });
     }                                
 
-    const {password, ...user} = await connectDB.getRepository(User).save({
+    const {password, tfa_secret, ...user} = await connectDB.getRepository(User).save({
         first_name: body.first_name,
         last_name: body.last_name,
         email: body.email,
         password: await bcryptjs.hash(body.password, 10)
     });
 
-    res.send(body);
+    res.send(user);
 };
 
 export const Login = async (req: Request, res: Response) => {
@@ -46,8 +49,65 @@ export const Login = async (req: Request, res: Response) => {
 
     }
 
+    if (user.tfa_secret) {
+        return res.send({
+            id: user.id,
+        });
+    }
+
+    const secret = speakeasy.generateSecret({
+        name: "2FA",
+        length: 20
+    });
+
+    res.send({
+        id: user.id,
+        secret: secret.ascii,
+        otpauth_url: secret.otpauth_url
+    });
+};
+
+
+export const TwoFactorAuth = async (req: Request, res: Response) => {
+    try {
+    const id = req.body.id;
+
+    const repository = await connectDB.getRepository(User);
+
+    const user = await repository.findOne({
+        where: {
+            id
+        }
+    });
+
+    if (!user) {
+        return res.status(400).send({
+            message: "User not found"
+        });
+    }
+
+    const secret = user.tfa_secret !== '' ? user.tfa_secret : req.body.secret;
+
+    const verified = speakeasy.totp.verify({
+        secret,
+        encoding: "ascii",
+        token: req.body.code
+    });
+
+    if (!verified) {
+        return res.status(400).send({
+            message: "Invalid code"
+        });
+    }
+
+    if (user.tfa_secret === '') {
+        await repository.update(id, {
+            tfa_secret: secret
+        });
+    }
+
     const refreshToken = sign({
-        id: user.id
+        id
     }, process.env.REFRESH_SECRET || '', {expiresIn: "1w"});
 
 
@@ -60,19 +120,25 @@ export const Login = async (req: Request, res: Response) => {
     expired_at.setDate(expired_at.getDate() + 7);
 
     await connectDB.getRepository(Token).save({
-        user_id: user.id,
+        user_id: id,
         token: refreshToken,
         expired_at
     });
 
     const token = sign({
-        id: user.id
+        id
     }, process.env.ACCESS_SECRET || '', {expiresIn: "30s"});
 
     res.send({
         token
     });
+    } catch (error) {
+        return res.status(401).send({
+            message: "Unauthorized"
+    });
+    }
 };
+
 
 export const AuthenticatedUser = async (req: Request, res: Response) => {
     try {
@@ -118,7 +184,7 @@ export const AuthenticatedUser = async (req: Request, res: Response) => {
             });
         }
 
-        const {password, ...data} = user;
+        const {password, tfa_secret, ...data} = user;
 
         res.send(data);
 
