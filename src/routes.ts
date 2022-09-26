@@ -28,6 +28,9 @@ export const routes = (router: Router) => {
     router.get('/api/user', AuthenticatedUser);
     router.post('/api/refresh', Refresh);
     router.post('/api/logout', Logout);
-    router.post('/api/forgot', ForgotPassword);
+    router.post('/api/forgot',
+        [
+    check("email").isEmail(),
+    ], ForgotPassword);
     router.post('api/reset', ResetPassword);
 }

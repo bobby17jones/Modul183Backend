@@ -4,12 +4,22 @@ import connectDB from "../../ormconfig";
 import { Reset } from "../entity/reset.entity";
 import { User } from "../entity/user.entity";
 import bcryptjs from "bcryptjs";
+import { validationResult } from "express-validator";
 
 
 
 export const ForgotPassword = async (req: Request, res: Response) => {
     const {email} = req.body;
     const token = Math.random().toString(20).substring(2, 12);
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(422).render("/api/forgot", {
+            path: "/api/forgot",
+            pageTitle: "Forgot Password",
+            errors: errors.array()
+        });
+    }
 
     await connectDB.getRepository(Reset).save({
         email,

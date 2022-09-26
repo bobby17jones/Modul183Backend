@@ -15,7 +15,6 @@ export const Register = async (req: Request, res: Response) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        console.log(errors.array());
         return res.status(422).render("/api/register", {
             path: "/api/register",
             pageTitle: "Register",
@@ -44,14 +43,13 @@ export const Login = async (req: Request, res: Response) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        console.log(errors.array());
         return res.status(422).render("/api/login", {
             path: "/api/login",
             pageTitle: "Login",
             errors: errors.array()
         });
     }
-    
+
     const user = await connectDB.getRepository(User).findOne({
         where: {
         email: body.email
