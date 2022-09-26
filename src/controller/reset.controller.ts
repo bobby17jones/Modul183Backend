@@ -48,6 +48,15 @@ export const ForgotPassword = async (req: Request, res: Response) => {
 
 export const ResetPassword = async (req: Request, res: Response) => {
     const {token, password, password_confirm} = req.body;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(422).render("/api/reset", {
+            path: "/api/reset",
+            pageTitle: "Reset Password",
+            errors: errors.array()
+        });
+    }
 
     if (password !== password_confirm) {
         return res.status(400).send({

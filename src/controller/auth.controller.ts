@@ -92,6 +92,16 @@ export const TwoFactorAuth = async (req: Request, res: Response) => {
     try {
     const id = req.body.id;
 
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(422).render("/api/two-factor", {
+            path: "/api/two-factor",
+            pageTitle: "Two Factor Authentication",
+            errors: errors.array()
+        });
+    }
+
     const repository = await connectDB.getRepository(User);
 
     const user = await repository.findOne({

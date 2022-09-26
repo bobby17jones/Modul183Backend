@@ -10,6 +10,10 @@ export const routes = (router: Router) => {
     check("first_name").isLength({ min: 3 }),
     check("last_name").isLength({ min: 3 }),
     check("email").isEmail(),
+    //check if email has atleast one number
+    check("password").matches(/\d/),
+    //check if email has atleast one special character
+    check("password").matches(/[!@#$%^&*(),.?":{}|<>]/),
     check("password").isLength({ min: 6 }),
     check("password_confirm").custom((value, { req }) => {
         if (value !== req.body.password) {
@@ -22,9 +26,17 @@ export const routes = (router: Router) => {
         [
     check("email").isEmail(),
     check("password").isLength({ min: 6 }),
+    //check if email has atleast one number
+    check("password").matches(/\d/),
+    //check if email has atleast one special character
+    check("password").matches(/[!@#$%^&*(),.?":{}|<>]/)
     ], Login);
 
-    router.post('/api/two-factor', TwoFactorAuth);
+    router.post('/api/two-factor',
+        [
+    check("code").isLength({ min: 6 }),
+    check("code").matches(/\d/),
+    ], TwoFactorAuth);
     router.get('/api/user', AuthenticatedUser);
     router.post('/api/refresh', Refresh);
     router.post('/api/logout', Logout);
@@ -32,5 +44,18 @@ export const routes = (router: Router) => {
         [
     check("email").isEmail(),
     ], ForgotPassword);
-    router.post('api/reset', ResetPassword);
+    router.post('api/reset', 
+        [
+    check("password").isLength({ min: 6 }),
+    //check if email has atleast one number
+    check("password").matches(/\d/),
+    //check if email has atleast one special character
+    check("password").matches(/[!@#$%^&*(),.?":{}|<>]/),
+    check("password_confirm").custom((value, { req }) => {
+        if (value !== req.body.password) {
+            throw new Error("Password confirmation does not match password");
+        }
+        return true;
+    }),
+    ], ResetPassword);
 }
