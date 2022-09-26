@@ -5,12 +5,23 @@ import bcryptjs from "bcryptjs";
 import { sign, verify } from "jsonwebtoken";
 import { Token } from "../entity/token.entity";
 import { MoreThanOrEqual } from "typeorm";
+import { validationResult } from "express-validator";
 
 const speakeasy = require("speakeasy");
 const qrcode = require("qrcode");
 
 export const Register = async (req: Request, res: Response) => {
     const body = req.body;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        console.log(errors.array());
+        return res.status(422).render("/api/register", {
+            path: "/api/register",
+            pageTitle: "Register",
+            errors: errors.array()
+        });
+    }
 
     if (body.password !== body.password_confirm) {
         return res.status(400).send({
@@ -30,6 +41,17 @@ export const Register = async (req: Request, res: Response) => {
 
 export const Login = async (req: Request, res: Response) => {
     const body = req.body;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        console.log(errors.array());
+        return res.status(422).render("/api/login", {
+            path: "/api/login",
+            pageTitle: "Login",
+            errors: errors.array()
+        });
+    }
+    
     const user = await connectDB.getRepository(User).findOne({
         where: {
         email: body.email
